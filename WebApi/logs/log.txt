@@ -1,2 +1,0 @@
-2025-03-07 12:45:57.818 +05:00 [INF] /api/LetterCount/botay_suka/ad78c908ad78c908ad78c9085fae530788aad78ad78c908cab059008d4d55a12d9f7870
-2025-03-07 12:46:01.137 +05:00 [INF] Microsoft.AspNetCore.Http.DefaultHttpRequest 200

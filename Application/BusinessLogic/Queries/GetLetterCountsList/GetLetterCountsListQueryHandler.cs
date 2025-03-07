@@ -29,15 +29,14 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
             .SelectMany(post => post.ToLower().Where(char.IsLetter))
             .GroupBy(c => c)
             .Select(g => new LetterCount { Letter = g.Key.ToString(), Count = g.Count(), Id = Guid.NewGuid() })
-            .OrderBy(lc => lc.Letter)
             .ToList();
 
-        _dbContext.LetterCounts.RemoveRange(_dbContext.LetterCounts);
+        _dbContext.LetterCounts.RemoveRange(_dbContext.LetterCounts); // в тз не сказано, что делать с предыдущими результатами, поэтому удаляю их
         await _dbContext.LetterCounts.AddRangeAsync(letterCount, cancellationToken);
         
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return await _dbContext.LetterCounts.ToListAsync(cancellationToken);
+        return await _dbContext.LetterCounts.OrderBy(lc => lc.Letter).ToListAsync(cancellationToken);
     }
     
     private static async Task<List<string>> ParsePostsAsync(string jsonResponse)
