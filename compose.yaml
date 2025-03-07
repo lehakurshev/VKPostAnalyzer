@@ -2,5 +2,43 @@
   webapi:
     image: webapi
     build:
+      args:
+        PORT: 8080
       context: .
       dockerfile: WebApi/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - API_VERSION=v3
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=vkanalyticsdb
+      - FRONTEND_HOST=http://localhost:3000
+      - PORT=8080
+    networks:
+      - backend
+    depends_on:
+      - postgres
+  
+  postgres:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: vkanalyticsdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres: { }
+
+networks:
+  backend:
+    driver: bridge
