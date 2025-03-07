@@ -13,7 +13,7 @@
 - заходим на dev.vk.com
 - создаем приложение
 - в разделе Разработка/Ключи доступа можно создать "сервисный ключ" который позволит обращаться к API vk
-- pictures/1.png
+- ![alt text](https://github.com/lehakurshev/VKPostAnalyzer/blob/main/pictures/1.png)
 
 ### Шаги установки
 
@@ -35,10 +35,8 @@
 ### Использование Swagger
 
     После запуска приложения, доступ к UI для взаимодействия с backend частью осуществляется через Swagger. Откройте браузер и перейдите по адресу:
-    ```
     http://localhost:8080
-    ```
-    pictures/1.png
+    ![alt text](https://github.com/lehakurshev/VKPostAnalyzer/blob/main/pictures/2.png)
 
 
 ## Описание функциональности
