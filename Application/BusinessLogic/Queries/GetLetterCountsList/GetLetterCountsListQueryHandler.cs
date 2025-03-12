@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Application.Common.Exceptions;
 using Application.Interfaces;
 using Domain;
 using MediatR;
@@ -43,31 +44,39 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
     {
         return await Task.Run(() =>
         {
-            try
-            {
-                using var doc = JsonDocument.Parse(jsonResponse);
-                var root = doc.RootElement;
+            using var doc = JsonDocument.Parse(jsonResponse);
+            var root = doc.RootElement;
 
-                if (root.TryGetProperty("error", out _))
-                {
+            if (root.TryGetProperty("error", out var errorElement))
+            {
+
+                if (!errorElement.TryGetProperty("error_code", out var errorCodeElement))
                     throw new Exception("Error in VK API response: " + jsonResponse);
-                }
+                var errorCode = errorCodeElement.GetInt32();
 
-                if (!root.TryGetProperty("response", out var responseElement) ||
-                    !responseElement.TryGetProperty("items", out var itemsElement))
+                switch (errorCode)
                 {
-                    return new List<string>();
+                    case 5:
+                        throw new InvalidAccessTokenException("Invalid access token provided.");
+                    case 15:
+                        throw new UserHidWallException("The user has hidden their wall.");
+                    case 100:
+                        throw new InvalidIdException("Invalid user ID provided.");
+                    default:
+                        throw new Exception("Error in VK API response: " + jsonResponse);
                 }
+            }
 
-                return itemsElement.EnumerateArray()
-                    .Where(item => item.TryGetProperty("text", out var textElement))
-                    .Select(item => item.GetProperty("text").GetString())
-                    .ToList()!;
-            }
-            catch (JsonException ex)
+            if (!root.TryGetProperty("response", out var responseElement) ||
+                !responseElement.TryGetProperty("items", out var itemsElement))
             {
-                throw new Exception("Error parsing JSON: " + ex.Message + " - Response: " + jsonResponse);
+                return new List<string>();
             }
+
+            return itemsElement.EnumerateArray()
+                .Where(item => item.TryGetProperty("text", out var textElement))
+                .Select(item => item.GetProperty("text").GetString())
+                .ToList()!;
         });
     }
 }
