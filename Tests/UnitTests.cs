@@ -12,7 +12,6 @@ public class Tests : IDisposable, IAsyncDisposable
     private IHttpClientFactory _httpClientFactory;
     private AppDbContext _dbContext { get; set; }
     private string? _accessToken;
-    private Mock<IValidator<GetLetterCountsListQuery>> _mockValidator = new Mock<IValidator<GetLetterCountsListQuery>>();
     
     [SetUp]
     public void Setup()
