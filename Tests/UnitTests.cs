@@ -1,8 +1,10 @@
 using Application.BusinessLogic.Queries.GetLetterCountsList;
 using Application.Common.Exceptions;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Persistence;
+using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace Tests;
 
@@ -10,6 +12,8 @@ public class Tests : IDisposable, IAsyncDisposable
 {
     private IHttpClientFactory _httpClientFactory;
     private AppDbContext _dbContext { get; set; }
+    private string? _accessToken;
+    private Mock<IValidator<GetLetterCountsListQuery>> _mockValidator = new Mock<IValidator<GetLetterCountsListQuery>>();
     
     [SetUp]
     public void Setup()
@@ -26,25 +30,25 @@ public class Tests : IDisposable, IAsyncDisposable
         _httpClientFactory = httpClientFactoryMock.Object;
         
         DotNetEnv.Env.TraversePath().Load();
+        _accessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN");
     }
 
     [Test]
-    public async Task Test1()
+    public async Task Handle_ValidRequest_ReturnsLetterCounts()
     {
-        var a = Environment.GetEnvironmentVariable("ACCESS_TOKEN");
         var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
         var result = await handler.Handle(
             new GetLetterCountsListQuery
             {
                 UserId = "botay_suka",
-                AccessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN"),
+                AccessToken = _accessToken,
             }, CancellationToken.None);
         
         Assert.NotNull(result);
     }
     
     [Test]
-    public async Task Test2()
+    public async Task Handle_InvalidAccessToken_ThrowsInvalidAccessTokenException()
     {
         var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
         var ex = Assert.ThrowsAsync<InvalidAccessTokenException>(async () =>
@@ -56,62 +60,54 @@ public class Tests : IDisposable, IAsyncDisposable
                     AccessToken = "bad_access_token"
                 }, CancellationToken.None);
         });
-        
-        Assert.That(ex, Is.InstanceOf<InvalidAccessTokenException>());
     }
     
     [Test]
-    public async Task Test3()
+    public async Task Handle_UserHasHiddenWall_ThrowsUserHidWallException()
     {
         var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
 
-        var ex = Assert.ThrowsAsync<UserHidWallException>(async () =>
+        Assert.ThrowsAsync<UserHidWallException>(async () =>
         {
             await handler.Handle(
                 new GetLetterCountsListQuery
                 {
                     UserId = "bad_id",
-                    AccessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN"),
+                    AccessToken = _accessToken,
                 }, CancellationToken.None);
         });
-
-        Assert.That(ex, Is.InstanceOf<UserHidWallException>());
     }
     
     [Test]
-    public async Task Test4()
+    public async Task Handle_InvalidUserIdFormat_ThrowsInvalidIdException()
     {
         var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
 
-        var ex = Assert.ThrowsAsync<InvalidIdException>(async () =>
+        Assert.ThrowsAsync<InvalidIdException>(async () =>
         {
             await handler.Handle(
                 new GetLetterCountsListQuery
                 {
                     UserId = "bad_id_bad_id_bad_id",
-                    AccessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN"),
+                    AccessToken = _accessToken,
                 }, CancellationToken.None);
         });
-
-        Assert.That(ex, Is.InstanceOf<InvalidIdException>());
     }
     
     [Test]
-    public async Task Test5()
+    public async Task Handle_GeneralExceptionFromExternalService_ThrowsException()
     {
         var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
 
-        var ex = Assert.ThrowsAsync<Exception>(async () =>
+        Assert.ThrowsAsync<Exception>(async () =>
         {
             await handler.Handle(
                 new GetLetterCountsListQuery
                 {
                     UserId = "rdtvs",
-                    AccessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN"),
+                    AccessToken = _accessToken,
                 }, CancellationToken.None);
         });
-
-        Assert.That(ex, Is.InstanceOf<Exception>());
     }
 
     public void Dispose()
