@@ -4,7 +4,6 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Persistence;
-using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace Tests;
 
@@ -45,6 +44,15 @@ public class Tests : IDisposable, IAsyncDisposable
             }, CancellationToken.None);
         
         Assert.NotNull(result);
+        Assert.IsNotEmpty(result);
+        Assert.IsTrue(result.Count > 0);
+        
+        var sortedResult = result.OrderBy(letterCount =>
+            letterCount.Letter, Comparer<string>.Create((x, y) =>
+            string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase)
+        )!).ToList();
+        Assert.That(result, Is.EqualTo(sortedResult));
+
     }
     
     [Test]
