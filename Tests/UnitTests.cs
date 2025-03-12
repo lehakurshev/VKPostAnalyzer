@@ -1,5 +1,6 @@
 using Application.BusinessLogic.Queries.GetLetterCountsList;
 using Application.Common.Exceptions;
+using Domain;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -7,14 +8,14 @@ using Persistence;
 
 namespace Tests;
 
-public class Tests : IDisposable, IAsyncDisposable
+public class Tests
 {
     private IHttpClientFactory _httpClientFactory;
     private AppDbContext _dbContext { get; set; }
     private string? _accessToken;
     
-    [SetUp]
-    public void Setup()
+    [OneTimeSetUp]
+    public void OneTimeSetup()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().Options;
         _dbContext = new AppDbContext(options);
@@ -29,6 +30,12 @@ public class Tests : IDisposable, IAsyncDisposable
         
         DotNetEnv.Env.TraversePath().Load();
         _accessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN");
+    }
+    
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+        _dbContext.Dispose();
     }
 
     [Test]
@@ -115,15 +122,5 @@ public class Tests : IDisposable, IAsyncDisposable
                     AccessToken = _accessToken,
                 }, CancellationToken.None);
         });
-    }
-
-    public void Dispose()
-    {
-        _dbContext.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-       await _dbContext.DisposeAsync();
     }
 }
