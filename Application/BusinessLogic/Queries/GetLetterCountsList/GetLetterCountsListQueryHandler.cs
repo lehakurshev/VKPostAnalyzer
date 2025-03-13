@@ -49,22 +49,7 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
 
             if (root.TryGetProperty("error", out var errorElement))
             {
-
-                if (!errorElement.TryGetProperty("error_code", out var errorCodeElement))
-                    throw new Exception("Error in VK API response: " + jsonResponse);
-                var errorCode = errorCodeElement.GetInt32();
-
-                switch (errorCode)
-                {
-                    case 5:
-                        throw new InvalidAccessTokenException("Invalid access token provided.");
-                    case 15:
-                        throw new UserHidWallException("The user has hidden their wall.");
-                    case 100:
-                        throw new InvalidIdException("Invalid user ID provided.");
-                    default:
-                        throw new Exception("Error in VK API response: " + jsonResponse);
-                }
+                HandleErrorCode(errorElement);
             }
 
             if (!root.TryGetProperty("response", out var responseElement) ||
@@ -78,5 +63,25 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
                 .Select(item => item.GetProperty("text").GetString())
                 .ToList()!;
         });
+    }
+
+    private static void HandleErrorCode(JsonElement errorElement)
+    {
+        if (!errorElement.TryGetProperty("error_code", out var errorCodeElement))
+            throw new Exception("Error in VK API response: " + errorElement.GetRawText());
+
+        var errorCode = errorCodeElement.GetInt32();
+
+        switch (errorCode)
+        {
+            case 5:
+                throw new InvalidAccessTokenException("Invalid access token provided.");
+            case 15:
+                throw new UserHidWallException("The user has hidden their wall.");
+            case 100:
+                throw new InvalidIdException("Invalid user ID provided.");
+            default:
+                throw new Exception("Error in VK API response: " + errorElement.GetRawText());
+        }
     }
 }

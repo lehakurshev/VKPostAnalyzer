@@ -1,18 +1,20 @@
+using System.ComponentModel.DataAnnotations;
 using Application.BusinessLogic.Queries.GetLetterCountsList;
 using Application.Common.Exceptions;
-using Domain;
-using FluentValidation;
+using FluentValidation.TestHelper;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Persistence;
 
 namespace Tests;
 
+[TestFixture]
 public class Tests
 {
     private IHttpClientFactory _httpClientFactory;
-    private AppDbContext _dbContext { get; set; }
-    private string? _accessToken;
+    private AppDbContext _dbContext;
+    private static string? _accessToken;
+    private GetLetterCountsListValidator _validator;
     
     [OneTimeSetUp]
     public void OneTimeSetup()
@@ -30,6 +32,8 @@ public class Tests
         
         DotNetEnv.Env.TraversePath().Load();
         _accessToken = Environment.GetEnvironmentVariable("ACCESS_TOKEN");
+        
+        _validator = new GetLetterCountsListValidator();
     }
     
     [OneTimeTearDown]
@@ -58,69 +62,68 @@ public class Tests
             string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase)
         )!).ToList();
         Assert.That(result, Is.EqualTo(sortedResult));
-
     }
     
-    [Test]
-    public async Task Handle_InvalidAccessToken_ThrowsInvalidAccessTokenException()
+    [TestCaseSource(nameof(ExceptionTestCases))]
+    public async Task Handle_ExceptionCases_ThrowsExpectedException
+        (string userId, string? accessToken, Type expectedExceptionType)
     {
         var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
-        var ex = Assert.ThrowsAsync<InvalidAccessTokenException>(async () =>
+        var query = new GetLetterCountsListQuery { UserId = userId, AccessToken = accessToken ?? _accessToken };
+
+        Assert.ThrowsAsync(expectedExceptionType, async () =>
         {
-            await handler.Handle(
-                new GetLetterCountsListQuery
-                {
-                    UserId = "botay_suka",
-                    AccessToken = "bad_access_token"
-                }, CancellationToken.None);
+            await handler.Handle(query, CancellationToken.None);
         });
     }
     
-    [Test]
-    public async Task Handle_UserHasHiddenWall_ThrowsUserHidWallException()
+    [TestCaseSource(nameof(ValidationResultTestCases))]
+    public async Task Validator_ShouldValidateCorrectly(string accessToken, string userId,
+        Action<TestValidationResult<GetLetterCountsListQuery>> assertAction)
     {
-        var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
-
-        Assert.ThrowsAsync<UserHidWallException>(async () =>
+        var query = new GetLetterCountsListQuery
         {
-            await handler.Handle(
-                new GetLetterCountsListQuery
-                {
-                    UserId = "bad_id",
-                    AccessToken = _accessToken,
-                }, CancellationToken.None);
-        });
+            AccessToken = accessToken,
+            UserId = userId
+        };
+        var result = _validator.TestValidate(query);
+        assertAction(result);
     }
     
-    [Test]
-    public async Task Handle_InvalidUserIdFormat_ThrowsInvalidIdException()
-    {
-        var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
-
-        Assert.ThrowsAsync<InvalidIdException>(async () =>
-        {
-            await handler.Handle(
-                new GetLetterCountsListQuery
-                {
-                    UserId = "bad_id_bad_id_bad_id",
-                    AccessToken = _accessToken,
-                }, CancellationToken.None);
-        });
-    }
+    private static readonly object[][] ExceptionTestCases =
+    [
+        ["botay_suka", "bad_access_token", typeof(InvalidAccessTokenException)],
+        ["bad_id", null, typeof(UserHidWallException)],
+        ["bad_id_bad_id_bad_id", null, typeof(InvalidIdException)],
+        ["rdtvs", null, typeof(Exception)]
+    ];
     
-    [Test]
-    public async Task Handle_GeneralExceptionFromExternalService_ThrowsException()
-    {
-        var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
-
-        Assert.ThrowsAsync<Exception>(async () =>
-        {
-            await handler.Handle(
-                new GetLetterCountsListQuery
-                {
-                    UserId = "rdtvs",
-                    AccessToken = _accessToken,
-                }, CancellationToken.None);
-        });
-    }
+    private static readonly object[][] ValidationResultTestCases =
+    [
+        [
+            "ValidToken123", "ValidUser123", 
+            (Action<TestValidationResult<GetLetterCountsListQuery>>)
+            (result => result.ShouldNotHaveAnyValidationErrors())
+        ],
+        [
+            "", "ValidUser123", 
+            (Action<TestValidationResult<GetLetterCountsListQuery>>)
+            (result => result.ShouldHaveValidationErrorFor(x => x.AccessToken))
+        ],
+        [
+            "Invalid@Token!", "ValidUser123", 
+            (Action<TestValidationResult<GetLetterCountsListQuery>>)
+            (result => result.ShouldHaveValidationErrorFor(x => x.AccessToken))
+        ],
+        [
+            "ValidToken123", "", 
+            (Action<TestValidationResult<GetLetterCountsListQuery>>)
+            (result => result.ShouldHaveValidationErrorFor(x => x.UserId))
+        ],
+        [
+            "ValidToken123", "Invalid@User!", 
+            (Action<TestValidationResult<GetLetterCountsListQuery>>)
+            (result => result.ShouldHaveValidationErrorFor(x => x.UserId))
+        ]
+    ];
 }
