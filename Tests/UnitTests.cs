@@ -68,8 +68,9 @@ public class Tests
     public async Task Handle_ExceptionCases_ThrowsExpectedException
         (string userId, string? accessToken, Type expectedExceptionType)
     {
+        accessToken ??= _accessToken;
         var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
-        var query = new GetLetterCountsListQuery { UserId = userId, AccessToken = accessToken ?? _accessToken };
+        var query = new GetLetterCountsListQuery { UserId = userId, AccessToken = accessToken };
 
         Assert.ThrowsAsync(expectedExceptionType, async () =>
         {
