@@ -8,10 +8,10 @@ public class GetLetterCountsListValidator : AbstractValidator<GetLetterCountsLis
     {
         RuleFor(command => command.AccessToken)
             .NotEmpty()
-            .Matches("^[a-zA-Z0-9]+$").WithMessage("AccessToken должен содержать только английские буквы и цифры.");
+            .Matches("^[a-zA-Z0-9_]+$").WithMessage("AccessToken должен содержать только английские буквы и цифры.");
 
         RuleFor(command => command.UserId)
             .NotEmpty()
-            .Matches("^[a-zA-Z0-9]+$").WithMessage("UserId должен содержать только английские буквы и цифры.");
+            .Matches("^[a-zA-Z0-9_]+$").WithMessage("UserId должен содержать только английские буквы и цифры.");
     }
 }
