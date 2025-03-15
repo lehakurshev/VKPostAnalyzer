@@ -21,7 +21,8 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
     public async Task<IList<LetterCount>> Handle(GetLetterCountsListQuery request, CancellationToken cancellationToken)
     {
         var client = _httpClientFactory.CreateClient();
-        var url = $"https://api.vk.com/method/wall.get?owner_id={request.UserId}&count=5&access_token={request.AccessToken}&v=5.131";
+        var url = $"https://api.vk.com/method/wall.get?owner_id=" +
+                  $"{request.UserId}&count=5&access_token={request.AccessToken}&v=5.131";
         var response = await client.GetStringAsync(url, cancellationToken);
 
         var posts = await ParsePostsAsync(response);
@@ -29,10 +30,12 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
         var letterCount = posts
             .SelectMany(post => post.ToLower().Where(char.IsLetter))
             .GroupBy(c => c)
-            .Select(g => new LetterCount { Letter = g.Key.ToString(), Count = g.Count(), Id = Guid.NewGuid() })
+            .Select(g => new LetterCount 
+                { Letter = g.Key.ToString(), Count = g.Count(), Id = Guid.NewGuid() })
             .ToList();
 
-        _dbContext.LetterCounts.RemoveRange(_dbContext.LetterCounts); // в тз не сказано, что делать с предыдущими результатами, поэтому удаляю их
+        // в тз не сказано, что делать с предыдущими результатами, поэтому удаляю их
+        _dbContext.LetterCounts.RemoveRange(_dbContext.LetterCounts);
         await _dbContext.LetterCounts.AddRangeAsync(letterCount, cancellationToken);
         
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -42,27 +45,24 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
     
     private static async Task<List<string>> ParsePostsAsync(string jsonResponse)
     {
-        return await Task.Run(() =>
+        using var doc = JsonDocument.Parse(jsonResponse);
+        var root = doc.RootElement;
+
+        if (root.TryGetProperty("error", out var errorElement))
         {
-            using var doc = JsonDocument.Parse(jsonResponse);
-            var root = doc.RootElement;
+            HandleErrorCode(errorElement);
+        }
 
-            if (root.TryGetProperty("error", out var errorElement))
-            {
-                HandleErrorCode(errorElement);
-            }
+        if (!root.TryGetProperty("response", out var responseElement) ||
+            !responseElement.TryGetProperty("items", out var itemsElement))
+        {
+            return new List<string>();
+        }
 
-            if (!root.TryGetProperty("response", out var responseElement) ||
-                !responseElement.TryGetProperty("items", out var itemsElement))
-            {
-                return new List<string>();
-            }
-
-            return itemsElement.EnumerateArray()
-                .Where(item => item.TryGetProperty("text", out var textElement))
-                .Select(item => item.GetProperty("text").GetString())
-                .ToList()!;
-        });
+        return itemsElement.EnumerateArray()
+            .Where(item => item.TryGetProperty("text", out var textElement))
+            .Select(item => item.GetProperty("text").GetString()!)
+            .ToList();
     }
 
     private static void HandleErrorCode(JsonElement errorElement)
