@@ -78,6 +78,14 @@ public class Tests
         });
     }
     
+    private static readonly object[][] ExceptionTestCases =
+    [
+        ["botay_suka", "bad_access_token", typeof(InvalidAccessTokenException)],
+        ["bad_id", null, typeof(UserHidWallException)],
+        ["bad_id_bad_id_bad_id", null, typeof(InvalidIdException)],
+        ["rdtvs", null, typeof(Exception)]
+    ];
+    
     [TestCaseSource(nameof(ValidationResultTestCases))]
     public async Task Validator_ShouldValidateCorrectly(string accessToken, string userId,
         Action<TestValidationResult<GetLetterCountsListQuery>> assertAction)
@@ -90,14 +98,6 @@ public class Tests
         var result = _validator.TestValidate(query);
         assertAction(result);
     }
-    
-    private static readonly object[][] ExceptionTestCases =
-    [
-        ["botay_suka", "bad_access_token", typeof(InvalidAccessTokenException)],
-        ["bad_id", null, typeof(UserHidWallException)],
-        ["bad_id_bad_id_bad_id", null, typeof(InvalidIdException)],
-        ["rdtvs", null, typeof(Exception)]
-    ];
     
     private static readonly object[][] ValidationResultTestCases =
     [
