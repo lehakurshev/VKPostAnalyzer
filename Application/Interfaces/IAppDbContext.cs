@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Interfaces;
 
-public interface IAppDbContext
+public interface IAppDbContext : IDisposable
 {
-    DbSet<LetterCount> LetterCounts { get; set; }
+    DbSet<LetterCountRequestData> LetterCountRequestData { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

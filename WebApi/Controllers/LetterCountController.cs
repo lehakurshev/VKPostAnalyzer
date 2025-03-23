@@ -10,7 +10,7 @@ namespace WebApi.Controllers;
 public class LetterCountController : BaseController
 {
     [HttpGet("{userId}/{accessToken}")]
-    public async Task<ActionResult<List<LetterCount>>> GetPostAnalysis(string userId, string accessToken)
+    public async Task<ActionResult<List<LetterCountRequestData>>> GetPostAnalysis(string userId, string accessToken)
     {
         var query = new GetLetterCountsListQuery{ UserId = userId, AccessToken = accessToken };
         var counts = await Mediator.Send(query);

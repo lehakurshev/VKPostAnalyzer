@@ -17,14 +17,14 @@ public class LoggingMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var request = context.Request.Path.Value;
-        if (request != null && request.Contains("/api/LetterCount"))
+        if (request != null && request.Contains("/api/LetterCountRequestData"))
         {
             Log.Information($"{context.Request.Path.Value}");
         }
         
         await _next(context);
 
-        if (request != null && request.Contains("/api/LetterCount"))
+        if (request != null && request.Contains("/api/LetterCountRequestData"))
         {
             Log.Information($"{context.Request} {context.Response.StatusCode}");
         }

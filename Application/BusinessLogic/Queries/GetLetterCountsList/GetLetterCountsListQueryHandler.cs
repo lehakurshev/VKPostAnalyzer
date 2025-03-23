@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.BusinessLogic.Queries.GetLetterCountsList;
 
-public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsListQuery, IList<LetterCount>>
+public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsListQuery, JsonDocument>
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IAppDbContext _dbContext;
@@ -18,32 +18,26 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
         _dbContext = dbContext;
     }
     
-    public async Task<IList<LetterCount>> Handle(GetLetterCountsListQuery request, CancellationToken cancellationToken)
+    public async Task<JsonDocument> Handle(GetLetterCountsListQuery request, CancellationToken cancellationToken)
     {
         var client = _httpClientFactory.CreateClient();
         var url = $"https://api.vk.com/method/wall.get?owner_id=" +
                   $"{request.UserId}&count=5&access_token={request.AccessToken}&v=5.131";
         var response = await client.GetStringAsync(url, cancellationToken);
-
-        var posts = await ParsePostsAsync(response);
-
-        var letterCount = posts
-            .SelectMany(post => post.ToLower().Where(char.IsLetter))
-            .GroupBy(c => c)
-            .Select(g => new LetterCount 
-                { Letter = g.Key.ToString(), Count = g.Count(), Id = Guid.NewGuid() })
-            .ToList();
-
-        // в тз не сказано, что делать с предыдущими результатами, поэтому удаляю их
-        _dbContext.LetterCounts.RemoveRange(_dbContext.LetterCounts);
-        await _dbContext.LetterCounts.AddRangeAsync(letterCount, cancellationToken);
         
+        var result = await ParsePostsAsync(response);
+
+        await _dbContext.LetterCountRequestData.AddAsync(new LetterCountRequestData(
+            request.UserId,
+            request.AccessToken,
+            result
+        ), cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return await _dbContext.LetterCounts.OrderBy(lc => lc.Letter).ToListAsync(cancellationToken);
+        return result;
     }
     
-    private static async Task<List<string>> ParsePostsAsync(string jsonResponse)
+    private static async Task<JsonDocument> ParsePostsAsync(string jsonResponse)
     {
         using var doc = JsonDocument.Parse(jsonResponse);
         var root = doc.RootElement;
@@ -56,13 +50,30 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
         if (!root.TryGetProperty("response", out var responseElement) ||
             !responseElement.TryGetProperty("items", out var itemsElement))
         {
-            return new List<string>();
+            return JsonDocument.Parse("{}");
         }
 
-        return itemsElement.EnumerateArray()
-            .Where(item => item.TryGetProperty("text", out var textElement))
-            .Select(item => item.GetProperty("text").GetString()!)
-            .ToList();
+        var letterCounts = new Dictionary<char, int>();
+        
+        var chars = itemsElement.EnumerateArray()
+            .Where(item => item.TryGetProperty("text", out _))
+            .Select(item => item.GetProperty("text").GetString()?.ToLower() ?? "")
+            .SelectMany(text => text.Where(char.IsLetter));
+
+        chars.GroupBy(c => c)
+            .ToList()
+            .ForEach(g => letterCounts.TryAdd(g.Key, g.Count()));
+
+        var sortedLetterCounts = letterCounts.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        var jsonString = JsonSerializer.Serialize(sortedLetterCounts, options);
+        return JsonDocument.Parse(jsonString);
     }
 
     private static void HandleErrorCode(JsonElement errorElement)
@@ -72,16 +83,12 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
 
         var errorCode = errorCodeElement.GetInt32();
 
-        switch (errorCode)
+        throw errorCode switch
         {
-            case 5:
-                throw new InvalidAccessTokenException("Invalid access token provided.");
-            case 15:
-                throw new UserHidWallException("The user has hidden their wall.");
-            case 100:
-                throw new InvalidIdException("Invalid user ID provided.");
-            default:
-                throw new Exception("Error in VK API response: " + errorElement.GetRawText());
-        }
+            5 => new InvalidAccessTokenException("Invalid access token provided."),
+            15 => new UserHidWallException("The user has hidden their wall."),
+            100 => new InvalidIdException("Invalid user ID provided."),
+            _ => new Exception("Error in VK API response: " + errorElement.GetRawText())
+        };
     }
 }
