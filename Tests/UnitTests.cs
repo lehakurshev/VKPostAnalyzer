@@ -9,6 +9,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Moq;
 using Persistence;
+using FluentAssertions;
+using FluentAssertions.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 
 namespace Tests;
 
@@ -79,6 +84,32 @@ public class Tests
         Assert.That(propertyNamesList
             .Zip(propertyNamesList.Skip(1), (current, next) => String.CompareOrdinal(current, next) <= 0)
             .All(isOrdered => isOrdered), Is.True);
+        
+        Assert.That(_accessToken == MockAppDbContext.Data.First().GetDecryptedAccessToken(), Is.True);
+    }
+    
+    [Test]
+    public async Task Handle_ValidRequest_ReturnsLetterCounts2()
+    {
+        var handler = new GetLetterCountsListQueryHandler(_httpClientFactory, _dbContext);
+        var result1 = await handler.Handle(
+            new GetLetterCountsListQuery
+            {
+                UserId = "botay_suka",
+                AccessToken = _accessToken,
+            }, CancellationToken.None);
+        
+        var result2 = await handler.Handle(
+            new GetLetterCountsListQuery
+            {
+                UserId = "botay_suka",
+                AccessToken = _accessToken,
+            }, CancellationToken.None);
+
+        Assert.That(result1.ToString() == result2.ToString(), Is.True);
+        Assert.That(MockAppDbContext.Data[0].Id != MockAppDbContext.Data[1].Id, Is.True);
+        Assert.That(MockAppDbContext.Data[0].AccessToken == MockAppDbContext.Data[1].AccessToken, Is.True);
+        
     }
     
     [TestCaseSource(nameof(ExceptionTestCases))]
