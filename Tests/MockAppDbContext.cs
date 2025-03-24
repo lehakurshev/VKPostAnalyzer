@@ -2,6 +2,8 @@ using System.Text.Json;
 using Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Domain;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Moq;
 
 namespace Tests;
@@ -15,14 +17,15 @@ public static class MockAppDbContext
     {
         var mockRepository = new MockRepository(MockBehavior.Default);
         var mockContext = mockRepository.Create<IAppDbContext>();
-        mockContext.Setup(x => x.SaveChangesAsync(CancellationToken.None)).Returns(Task.FromResult(int.MaxValue));
+        mockContext.Setup(x => x.SaveChangesAsync(CancellationToken.None))
+            .Returns(Task.FromResult(1));
         mockContext.Setup(db => db.LetterCountRequestData).Returns(MockDbSet().Object);
         return mockContext.Object;
     }
     
     private static Mock<DbSet<LetterCountRequestData>> MockDbSet()
     {
-        Data = new List<LetterCountRequestData>();
+        Data = [];
         
         var queryable = Data.AsQueryable();
 
@@ -38,9 +41,10 @@ public static class MockAppDbContext
             .Returns(queryable.GetEnumerator());
 
         mock.Setup(m => m.AddAsync(It.IsAny<LetterCountRequestData>(), It.IsAny<CancellationToken>()))
-            .Callback((LetterCountRequestData entity, CancellationToken token) =>
+            .Returns((LetterCountRequestData entity, CancellationToken token) =>
             {
                 Data.Add(entity);
+                return new ValueTask<EntityEntry<LetterCountRequestData>>(); //
             });
 
         return mock;
