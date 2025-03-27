@@ -84,8 +84,6 @@ public class Tests
         Assert.That(propertyNamesList
             .Zip(propertyNamesList.Skip(1), (current, next) => String.CompareOrdinal(current, next) <= 0)
             .All(isOrdered => isOrdered), Is.True);
-        
-        Assert.That(_accessToken == MockAppDbContext.Data.First().GetDecryptedAccessToken(), Is.True);
     }
     
     [Test]
@@ -108,8 +106,6 @@ public class Tests
 
         Assert.That(result1.ToString() == result2.ToString(), Is.True);
         Assert.That(MockAppDbContext.Data[0].Id != MockAppDbContext.Data[1].Id, Is.True);
-        Assert.That(MockAppDbContext.Data[0].AccessToken == MockAppDbContext.Data[1].AccessToken, Is.True);
-        
     }
     
     [TestCaseSource(nameof(ExceptionTestCases))]
@@ -131,7 +127,7 @@ public class Tests
         ["botay_suka", "bad_access_token", typeof(InvalidAccessTokenException)],
         ["bad_id", null, typeof(UserHidWallException)],
         ["bad_id_bad_id_bad_id", null, typeof(InvalidIdException)],
-        ["rdtvs", null, typeof(Exception)]
+        ["rdtvs", null, typeof(VkApiException)]
     ];
     
     [TestCaseSource(nameof(ValidationResultTestCases))]

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Application.Common.ErrorCodes;
 using Application.Common.Exceptions;
 using Application.Interfaces;
 using Domain;
@@ -29,7 +30,6 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
 
         await _dbContext.LetterCountRequestData.AddAsync(new LetterCountRequestData(
             request.UserId,
-            request.AccessToken,
             result
         ), cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -79,16 +79,16 @@ public class GetLetterCountsListQueryHandler : IRequestHandler<GetLetterCountsLi
     private static void HandleErrorCode(JsonElement errorElement)
     {
         if (!errorElement.TryGetProperty("error_code", out var errorCodeElement))
-            throw new Exception("Error in VK API response: " + errorElement.GetRawText());
+            throw new VkApiException("Error in VK API response: " + errorElement.GetRawText());
 
         var errorCode = errorCodeElement.GetInt32();
 
         throw errorCode switch
         {
-            5 => new InvalidAccessTokenException("Invalid access token provided."),
-            15 => new UserHidWallException("The user has hidden their wall."),
-            100 => new InvalidIdException("Invalid user ID provided."),
-            _ => new Exception("Error in VK API response: " + errorElement.GetRawText())
+            VkApiErrorCodes.InvalidAccessToken => new InvalidAccessTokenException("Invalid access token provided."),
+            VkApiErrorCodes.UserHidWall => new UserHidWallException("The user has hidden their wall."),
+            VkApiErrorCodes.InvalidUserId => new InvalidIdException("Invalid user ID provided."),
+            _ => new VkApiException("Error in VK API response: " + errorElement.GetRawText())
         };
     }
 }

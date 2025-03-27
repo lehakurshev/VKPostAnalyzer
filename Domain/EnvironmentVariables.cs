@@ -10,6 +10,4 @@ public static class EnvironmentVariables
     }
 
     public static string? AccessToken => Environment.GetEnvironmentVariable("ACCESS_TOKEN");
-    public static byte[] Key => Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("KEY"));
-    public static byte[] Iv => Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("IV"));
 }
