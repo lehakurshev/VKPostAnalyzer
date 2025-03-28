@@ -13,11 +13,11 @@ public class AppDbContext : DbContext, IAppDbContext
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        var host       = EnvironmentVariables.DbHost;
-        var port       = EnvironmentVariables.DbPort;
-        var db         = EnvironmentVariables.DbName;
-        var username          = EnvironmentVariables.DbUserName;
-        var password   = EnvironmentVariables.DbUserName;
+        var host = EnvironmentVariables.DbHost;
+        var port = EnvironmentVariables.DbPort;
+        var db = EnvironmentVariables.DbName;
+        var username = EnvironmentVariables.DbUserName;
+        var password = EnvironmentVariables.DbPassword;
         var connString = $"Host={host};Port={port};Database={db};Username={username};Password={password}";
 
         optionsBuilder.UseNpgsql(connString);

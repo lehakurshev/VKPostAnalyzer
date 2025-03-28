@@ -12,7 +12,7 @@
       - API_VERSION=v3
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=postgres
+      - DB_USER_NAME=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=vkanalyticsdb
       - FRONTEND_HOST=http://localhost:3000

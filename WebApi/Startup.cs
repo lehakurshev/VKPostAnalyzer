@@ -25,7 +25,7 @@ public class Startup
 
         services.AddSwaggerGen(c =>
         {
-            var apiVersion = EnvironmentVariables.ApiVersion ?? "v1";
+            var apiVersion = EnvironmentVariables.ApiVersion;
             c.SwaggerDoc("-", new OpenApiInfo { Title = "My API", Version = apiVersion });
         });
     }
