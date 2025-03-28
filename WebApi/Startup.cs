@@ -1,4 +1,5 @@
 ﻿using Application;
+using Domain;
 using Microsoft.OpenApi.Models;
 using Persistence;
 using WebApi.Middleware;
@@ -24,7 +25,7 @@ public class Startup
 
         services.AddSwaggerGen(c =>
         {
-            var apiVersion = EnvironmentaVariables.API_VERSION ?? "v1";
+            var apiVersion = EnvironmentVariables.ApiVersion ?? "v1";
             c.SwaggerDoc("-", new OpenApiInfo { Title = "My API", Version = apiVersion });
         });
     }

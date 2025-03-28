@@ -13,11 +13,11 @@ public class AppDbContext : DbContext, IAppDbContext
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        var host       = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
-        var port       = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
-        var db         = Environment.GetEnvironmentVariable("DB_NAME") ?? "vkanalyticsdb";
-        var username         = Environment.GetEnvironmentVariable("DB_USER_NAME") ?? "postgres";
-        var password   = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "postgres";
+        var host       = EnvironmentVariables.DbHost;
+        var port       = EnvironmentVariables.DbPort;
+        var db         = EnvironmentVariables.DbName;
+        var username          = EnvironmentVariables.DbUserName;
+        var password   = EnvironmentVariables.DbUserName;
         var connString = $"Host={host};Port={port};Database={db};Username={username};Password={password}";
 
         optionsBuilder.UseNpgsql(connString);

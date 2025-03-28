@@ -23,19 +23,21 @@
     cd <папка_проекта>
     ```
 
-2. **ENV**
-    в корневой папке создать файл .env с содержимым
-    ```
-    ACCESS_TOKEN={токен который мы получили в dev.vk.com}
-    ```
-
-3. **Запустить приложение:**
+2. **Запустить приложение:**
     ```
     docker-compose up --build
     ```
 
-4. **Можно и без Docker**
+3. **Можно и без Docker**
 - создаем PostgreSQL бд с названием "vkanalyticsdb"
+- в корневой папке `VkPostAnalyzer` создать файл .env с содержимым
+    ```
+    DB_HOST=localhost
+    DB_PORT=5432
+    DB_NAME=vkanalyticsdb
+    DB_USER_NAME=postgres
+    DB_PASSWORD=postgres
+    ```
 - запускаем .net приложение как вам удобно
 
 ### Использование Swagger
