@@ -37,6 +37,7 @@
     DB_NAME=vkanalyticsdb
     DB_USER_NAME=postgres
     DB_PASSWORD=postgres
+    API_VERSION=v3
     ```
 - запускаем .net приложение как вам удобно
 
